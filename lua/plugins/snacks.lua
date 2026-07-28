@@ -62,7 +62,18 @@ return {
                 enabled = true,
                 notify = false,
             },
+            -- 终端内图片预览（Windows/cmd 不支持，保持关闭）
+            image = { enabled = false },
         },
+        config = function(_, opts)
+            require("snacks").setup(opts)
+            -- image 已禁用时跳过 health 检查，避免 Windows 下误报
+            if not opts.image or not opts.image.enabled then
+                pcall(function()
+                    require("snacks.image").health = function() end
+                end)
+            end
+        end,
         keys = {
             -- 快速打开文件
             { "<leader>ff", function() Snacks.picker.files() end, desc = "Find Files" },

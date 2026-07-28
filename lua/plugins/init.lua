@@ -62,6 +62,7 @@ require("lazy").setup(plugins, {
             enabled = true,
         },
         rtp = {
+            reset = true,
             disabled_plugins = {
                 "gzip",
                 "matchit",

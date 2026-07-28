@@ -3,6 +3,13 @@
 -- ============================================
 
 return {
+    -- 图标（which-key 推荐，与 nvim-web-devicons 二选一即可）
+    {
+        "echasnovski/mini.icons",
+        lazy = true,
+        opts = {},
+    },
+
     -- 快捷键提示
     {
         "folke/which-key.nvim",
@@ -18,6 +25,7 @@ return {
                 spec = {
                     { "<leader>g", group = "Git" },
                     { "<leader>f", group = "Find" },
+                    { "<leader>c", group = "Code" },
                 },
             })
         end,
@@ -30,7 +38,7 @@ return {
         cmd = { "ConformInfo" },
         keys = {
             {
-                "<leader>f",
+                "<leader>cf",
                 function()
                     require("conform").format({ async = true, lsp_fallback = true })
                 end,
@@ -53,6 +61,8 @@ return {
             end,
             formatters_by_ft = {
                 lua = { "stylua" },
+                cs = { "csharpier" },
+                csharp = { "csharpier" },
                 python = { "isort", "black" },
                 javascript = { { "prettier", "prettierd" } },
                 typescript = { { "prettier", "prettierd" } },
@@ -82,13 +92,18 @@ return {
         },
     },
 
-    -- 多光标编辑
+    -- 多光标编辑（默认 <C-n> 让给 nvim-tree，改用 <A-n>）
     {
         "mg979/vim-visual-multi",
         branch = "master",
+        init = function()
+            vim.g.VM_maps = {
+                ["Find Under"] = "<A-n>",
+                ["Find Subword Under"] = "<A-n>",
+            }
+        end,
         keys = {
-            { "<C-n>", mode = { "n", "v" }, desc = "Select next" },
-            { "n", mode = { "v" }, desc = "Skip" },
+            { "<A-n>", mode = { "n", "v" }, desc = "Select next (multi-cursor)" },
         },
     },
 }

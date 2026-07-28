@@ -9,19 +9,27 @@ return {
         dependencies = {
             "williamboman/mason.nvim",
             "williamboman/mason-lspconfig.nvim",
+            "WhoIsSethDaniel/mason-tool-installer.nvim",
             "folke/neodev.nvim",
         },
         config = function()
+            require("neodev").setup()
             require("mason").setup()
-            
+
             local has_new_lsp_api = vim.fn.has("nvim-0.11") == 1
-            
+
             require("mason-lspconfig").setup({
                 ensure_installed = {
-                    "lua_ls", "pyright", "gopls", "rust_analyzer",
+                    "lua_ls", "csharp_ls",
+                    "pyright", "gopls", "rust_analyzer",
                     "clangd", "ts_ls", "jsonls", "yamlls",
                 },
                 automatic_installation = true,
+            })
+
+            require("mason-tool-installer").setup({
+                ensure_installed = { "stylua", "csharpier" },
+                run_on_start = true,
             })
 
             local lspconfig = require("lspconfig")
@@ -62,8 +70,14 @@ return {
                     cmd = { "pyright-langserver", "--stdio" },
                     filetypes = { "python" },
                 })
-                
-                vim.lsp.enable("lua_ls", "pyright", "gopls", "ts_ls")
+
+                vim.lsp.config("csharp_ls", {
+                    cmd = { "csharp-ls" },
+                    filetypes = { "cs", "csharp" },
+                    root_markers = { "*.sln", "*.csproj", ".git" },
+                })
+
+                -- mason-lspconfig 会自动 enable 已安装的服务器
                 
                 vim.api.nvim_create_autocmd("LspAttach", {
                     callback = function(args)
@@ -99,6 +113,7 @@ return {
                 lspconfig.ts_ls.setup({ on_attach = on_attach, capabilities = capabilities })
                 lspconfig.jsonls.setup({ on_attach = on_attach, capabilities = capabilities })
                 lspconfig.yamlls.setup({ on_attach = on_attach, capabilities = capabilities })
+                lspconfig.csharp_ls.setup({ on_attach = on_attach, capabilities = capabilities })
             end
         end,
     },
