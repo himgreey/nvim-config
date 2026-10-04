@@ -1,0 +1,7 @@
+require("config.options")
+require("config.runtime")
+require("config.keymaps")
+require("config.autocmds")
+require("game").setup()
+require("ai").setup()
+require("config.lazy")
