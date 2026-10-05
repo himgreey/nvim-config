@@ -43,11 +43,9 @@ return {
                 group = vim.api.nvim_create_augroup("GameDevTreesitter", { clear = true }),
                 callback = function(args)
                     local buf = args.buf
-                    if vim.bo[buf].buftype ~= "" or vim.api.nvim_buf_line_count(buf) > 20000 then
+                    if vim.bo[buf].buftype ~= "" or require("game.buffer").large(buf) then
                         return
                     end
-                    local stat = vim.uv.fs_stat(vim.api.nvim_buf_get_name(buf))
-                    if stat and stat.size > 1024 * 1024 then return end
                     local ok = pcall(vim.treesitter.start, buf)
                     if
                         ok

@@ -13,6 +13,8 @@ function M.get()
         codelldb = vim.env.CODELLDB,
         codex_acp = vim.env.CODEX_ACP_BIN,
         ai = { codex = { "codex" }, claude = { "claude" } },
+        performance = { max_file_bytes = 1024 * 1024, max_file_lines = 20000 },
+        ai_context = { max_bytes = 64 * 1024, max_lines = 1500, max_diagnostics = 50 },
     }, vim.g.game_dev or {})
 end
 return M

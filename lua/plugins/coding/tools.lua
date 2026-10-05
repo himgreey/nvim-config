@@ -24,7 +24,7 @@ return {
                     condition = function() return vim.fn.executable("gdformat") == 0 end,
                 },
             },
-            run_on_start = true,
+            run_on_start = false,
         },
     },
 }

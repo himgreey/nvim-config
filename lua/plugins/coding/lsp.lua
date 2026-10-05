@@ -2,6 +2,7 @@ return {
     {
         "neovim/nvim-lspconfig",
         event = { "BufReadPre", "BufNewFile" },
+        cmd = "GameLspInstall",
         dependencies = {
             "mason-org/mason.nvim",
             "mason-org/mason-lspconfig.nvim",
@@ -9,6 +10,7 @@ return {
             "hrsh7th/cmp-nvim-lsp",
         },
         config = function()
+            local workflow = require("game.lsp")
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
             vim.lsp.config("*", { capabilities = capabilities })
             vim.diagnostic.config({
@@ -49,14 +51,18 @@ return {
             })
 
             vim.lsp.config("lua_ls", {
-                settings = {
-                    Lua = {
-                        runtime = { version = "LuaJIT" },
-                        diagnostics = { globals = { "vim" } },
-                        workspace = { checkThirdParty = false, library = { vim.env.VIMRUNTIME } },
-                        telemetry = { enable = false },
-                    },
-                },
+                root_dir = function(buf, on_dir)
+                    on_dir(require("game.project").detect(vim.api.nvim_buf_get_name(buf)).root)
+                end,
+                on_init = function(client)
+                    local settings =
+                        workflow.lua_settings(client.config.root_dir or vim.fn.getcwd())
+                    if settings then
+                        client.config.settings.Lua =
+                            vim.tbl_deep_extend("force", client.config.settings.Lua or {}, settings)
+                    end
+                end,
+                settings = { Lua = { telemetry = { enable = false } } },
             })
             vim.lsp.config("omnisharp", {
                 root_dir = function(bufnr, on_dir)
@@ -106,22 +112,31 @@ return {
                 root_markers = { "project.godot" },
             })
 
-            local servers = {
-                "lua_ls",
-                "omnisharp",
-                "clangd",
-                "jsonls",
-                "yamlls",
-                "pyright",
-                "gopls",
-                "rust_analyzer",
-                "ts_ls",
-            }
+            local servers = require("game.config").get().lsp_servers
+                or {
+                    "lua_ls",
+                    "omnisharp",
+                    "clangd",
+                    "jsonls",
+                    "yamlls",
+                    "pyright",
+                    "gopls",
+                    "rust_analyzer",
+                    "ts_ls",
+                }
             -- 显式白名单，防止已安装的 csharp_ls 与 OmniSharp 同时接管 C#。
             require("mason-lspconfig").setup({
-                ensure_installed = servers,
-                automatic_enable = servers,
+                ensure_installed = {},
+                automatic_enable = false,
             })
+            for _, name in ipairs(vim.list_extend(vim.deepcopy(servers), { "gdscript" })) do
+                workflow.guard(name)
+            end
+            vim.api.nvim_create_user_command(
+                "GameLspInstall",
+                function(args) workflow.install(args.fargs, servers) end,
+                { nargs = "*", complete = function() return servers end }
+            )
             -- 同时支持 PATH 中的工具，不依赖 Mason 的安装状态。
             vim.lsp.enable(servers)
             vim.lsp.enable("gdscript")

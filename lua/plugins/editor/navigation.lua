@@ -64,6 +64,9 @@ return {
                 hijack_netrw = false, -- netrw 已在 config.options 中禁用。
                 -- Windows 上的同步 Git 查询会阻塞 Unity 大项目的打开和定位。
                 git = { enable = false },
+                filters = {
+                    custom = function(path) return require("game.project").excluded(path) end,
+                },
                 update_focused_file = {
                     enable = true,
                     update_root = { enable = true },

@@ -47,7 +47,9 @@ Unity 同步插件保留 `:Ustatus`、`:Usync`、`:Uopen`；移除了上游退�
 
 - `:checkhealth game`：检查 PATH、项目、Codex ACP 和 Godot 端口。
 - `:Mason`：查看语言服务、格式化器和调试器的安装结果。
-- `:MasonToolsInstall`：补装配置要求的辅助工具。
+- `:GameLspInstall`：按当前文件类型安装语言服务，也可指定名称，例如 `:GameLspInstall lua_ls omnisharp clangd`；安装后重开文件。
+- `:MasonToolsInstall`：按需补装配置要求的辅助工具；启动时不再自动安装。
+- `:GameProjectRefresh`：立即刷新根目录缓存；缓存最多保留 5 秒，写入项目标记或切换目录时自动清除。
 - `:GameParsersInstall`：安装配置使用的语法解析器；需要 C compiler、curl、tar 和 tree-sitter-cli。
 - `:ConformInfo`：查看当前文件实际使用的格式化器。
 - `:checkhealth vim.lsp`：检查 LSP；先打开对应语言文件。
@@ -55,6 +57,23 @@ Unity 同步插件保留 `:Ustatus`、`:Usync`、`:Uopen`；移除了上游退�
 `<leader>` 是空格。原有 `s` 保存、`jk` 退出插入模式、`Ctrl+h/j/k/l` 窗口导航继续可用。
 `Ctrl+n` 打开文件树时，会自动展开当前文件所在文件夹并选中该文件；切换文件时同步定位，跨目录时更新文件树根目录。
 文件树关闭 Git 状态查询，避免 Windows 下 Unity 大项目打开时阻塞；Git 状态和差异仍可通过 Neogit、Diffview 查看。
+搜索、文件树与 Lua LSP 共用引擎生成目录名单，保留 `Assets`、`Packages` 和 `.EmmyLuaUnity`；文件树中按 `U` 可暂时取消自定义过滤。
+
+超过 1 MB 或 20000 行的代码/资源 buffer 启用大文件保护：跳过 LSP、补全、Treesitter、缩进线与自动格式化，保持编辑和保存。
+Lua LSP 按项目隔离：仅 Nvim 配置加载 `VIMRUNTIME`；Unity 项目自动加载已有的 `.EmmyLuaUnity`，匹配 `Assets/Lua` 的 require 路径。
+项目根目录存在 `.luarc.json` / `.luarc.jsonc` 时优先采用项目设置。Lua 运行时可在项目配置中指定；全局默认也可设置 `vim.g.game_dev.lua_runtime`。
+LuaLS 库与排除规则依据[官方配置说明](https://luals.github.io/wiki/settings/#workspacelibrary)。
+
+C# 保存后异步格式化并自动写回；其他语言保留原有保存策略，`<leader>cf` 仍可手动格式化。
+AI 上下文最多 1500 行 / 64 KB，诊断最多 50 条；超过限制会提示缩小选区，不会截掉代码后发送。诊断也计入大小限制。
+可在加载配置前通过 `vim.g.game_dev` 覆盖阈值：
+
+```lua
+vim.g.game_dev = {
+    performance = { max_file_bytes = 1024 * 1024, max_file_lines = 20000 },
+    ai_context = { max_bytes = 64 * 1024, max_lines = 1500, max_diagnostics = 50 },
+}
+```
 
 | 快捷键 | 用途 |
 | --- | --- |
@@ -211,6 +230,7 @@ nvim --headless -i NONE -u init.lua -c "lua dofile('tests/audit.lua')"
 nvim --headless -i NONE -u init.lua -c "lua dofile('tests/plugins.lua')"
 nvim --headless -i NONE -u init.lua -c "lua dofile('tests/dashboard.lua')"
 nvim --headless -i NONE -u init.lua -c "lua dofile('tests/navigation.lua')"
+nvim --headless -i NONE -u init.lua -c "lua dofile('tests/optimization.lua')"
 ```
 
 第一个检查 Lua 语法、三个引擎的根目录、搜索过滤、AI 上下文、文件类型和缩进；第二个在真实插件环境中检查完整加载。
@@ -219,6 +239,7 @@ nvim --headless -i NONE -u init.lua -c "lua dofile('tests/navigation.lua')"
 第六个验证未保存内容保护、Unity 对应文件切换、光标保存和特殊 buffer 的项目目录；第七个加载全部插件并检查延迟 UI、通知和命令。
 第八个实际渲染 160×62、140×40、90×42、80×42、80×24 首页，检查透明背景、完整人物、双栏/单栏、快捷键和内容溢出。
 第九个通过真实 Ctrl+n 检查首次定位、跨目录定位、文件跟随，并确保文件树不执行同步 Git 查询。
+第十个验证根目录缓存、生成目录过滤、Lua 类型库隔离、大文件编辑/保存、AI 上下文限制、按文件类型安装和 C# 保存后格式化。
 真实游戏构建、Editor 附加调试和模型响应仍需在实际项目中验证。
 
 本机已通过 uv 安装 Python 3.12。若 PATH 中没有 Python，配置优先查找 uv 管理的 Python 3.12，再查找其他已有版本；也可设置 `NVIM_PYTHON_BIN`。这只影响 Neovim 进程的 PATH。

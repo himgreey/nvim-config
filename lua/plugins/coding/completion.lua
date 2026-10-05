@@ -20,6 +20,7 @@ return {
             require("snippets").setup()
 
             cmp.setup({
+                enabled = function() return not require("game.buffer").large(0) end,
                 snippet = {
                     expand = function(args) luasnip.lsp_expand(args.body) end,
                 },
@@ -52,7 +53,15 @@ return {
                     { name = "nvim_lsp" },
                     { name = "luasnip" },
                 }, {
-                    { name = "buffer" },
+                    {
+                        name = "buffer",
+                        option = {
+                            get_bufnrs = function()
+                                return require("game.buffer").large(0) and {}
+                                    or { vim.api.nvim_get_current_buf() }
+                            end,
+                        },
+                    },
                     { name = "path" },
                 }),
             })
@@ -60,7 +69,15 @@ return {
             cmp.setup.cmdline("/", {
                 mapping = cmp.mapping.preset.cmdline(),
                 sources = {
-                    { name = "buffer" },
+                    {
+                        name = "buffer",
+                        option = {
+                            get_bufnrs = function()
+                                return require("game.buffer").large(0) and {}
+                                    or { vim.api.nvim_get_current_buf() }
+                            end,
+                        },
+                    },
                 },
             })
 
