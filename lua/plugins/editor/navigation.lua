@@ -62,6 +62,11 @@ return {
         config = function()
             require("nvim-tree").setup({
                 hijack_netrw = false, -- netrw 已在 config.options 中禁用。
+                view = {
+                    width = function() return require("ui.layout").tree_width() end,
+                    preserve_window_proportions = true,
+                },
+                renderer = { root_folder_label = function(path) return vim.fs.basename(path) end },
                 -- Windows 上的同步 Git 查询会阻塞 Unity 大项目的打开和定位。
                 git = { enable = false },
                 filters = {

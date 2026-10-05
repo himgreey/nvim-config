@@ -12,11 +12,11 @@ local function portrait_text(text)
     local lines = vim.split(text:gsub("\n$", ""), "\n", { plain = true })
     local width = 0
     for _, line in ipairs(lines) do
-        width = math.max(width, vim.fn.strdisplaywidth(line))
+        width = math.max(width, vim.fn.strwidth(line))
     end
     -- 保持整幅点阵的相对坐标，避免居中时每一行被单独挪动。
     for index, line in ipairs(lines) do
-        lines[index] = line .. (" "):rep(width - vim.fn.strdisplaywidth(line))
+        lines[index] = line .. (" "):rep(width - vim.fn.strwidth(line))
     end
     return table.concat(lines, "\n")
 end
@@ -70,10 +70,18 @@ function M.sections(dashboard)
     if not wide then
         body_height = body_height - 11 - (recent and 4 or 0) - (projects and 3 or 0)
     end
-    local portrait = body_height >= 31 and art.full
-        or body_height >= 25 and art.medium
-        or body_height >= 18 and art.small
-        or art.compact
+    local portrait = art.compact
+    for _, candidate in ipairs({ art.full, art.medium, art.small, art.compact }) do
+        local lines = vim.split(candidate:gsub("\n$", ""), "\n", { plain = true })
+        local width = 0
+        for _, line in ipairs(lines) do
+            width = math.max(width, vim.fn.strwidth(line))
+        end
+        if #lines <= body_height and width <= dashboard.opts.width then
+            portrait = candidate
+            break
+        end
+    end
     local pane = wide and 2 or 1
     local sections = {
         {
@@ -87,7 +95,10 @@ function M.sections(dashboard)
             padding = padding,
         },
         {
-            text = { "REI AYANAMI  /  EVA-00", hl = "ReiCaption" },
+            text = {
+                dashboard.opts.width >= 22 and "REI AYANAMI  /  EVA-00" or "REI / EVA-00",
+                hl = "ReiCaption",
+            },
             align = "center",
             padding = padding,
         },
@@ -124,7 +135,20 @@ function M.sections(dashboard)
             padding = padding,
         }
     end
-    sections[#sections + 1] = { pane = pane, section = "startup", padding = padding }
+    if dashboard.opts.width >= 42 then
+        sections[#sections + 1] = { pane = pane, section = "startup", padding = padding }
+    else
+        local stats = require("lazy").stats()
+        sections[#sections + 1] = {
+            pane = pane,
+            text = {
+                ("%d/%d plugins · %.0fms"):format(stats.loaded, stats.count, stats.startuptime),
+                hl = "SnacksDashboardFooter",
+            },
+            align = "center",
+            padding = padding,
+        }
+    end
     return sections
 end
 

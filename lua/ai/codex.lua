@@ -13,12 +13,15 @@ function M.command()
     return { "codex-acp" }
 end
 
-local function get_chat(p, fresh)
+local function get_chat(p, fresh, cwd)
     p = p or require("game.project").detect()
     -- CodeCompanion 的 ACP session/new 使用 cwd；限制到当前 tab 的引擎根目录。
-    vim.cmd.tcd(vim.fn.fnameescape(p.root))
+    vim.cmd.tcd(vim.fn.fnameescape(cwd or p.root))
     local cc = require("codecompanion")
-    local chat = chats[p.root] or cc.last_chat()
+    local current = cc.buf_get_chat(vim.b.ai_chat_bufnr or 0)
+    local chat = current and vim.b[current.bufnr].game_root == p.root and current
+        or chats[p.root]
+        or cc.last_chat()
     if
         fresh
         or not chat
@@ -28,7 +31,19 @@ local function get_chat(p, fresh)
         or vim.b[chat.bufnr].game_root ~= p.root
     then
         chat = cc.chat({ params = { adapter = "codex" }, auto_submit = false })
-        if chat then vim.b[chat.bufnr].game_root = p.root end
+        if chat then
+            vim.b[chat.bufnr].game_root = p.root
+            vim.b[chat.bufnr].codex_cwd = cwd or p.root
+            chat:add_callback("on_before_submit", function(active)
+                if active._game_panel_busy then
+                    vim.notify(
+                        "请等待 Codex 模型或历史操作完成后再发送",
+                        vim.log.levels.WARN
+                    )
+                    return false
+                end
+            end)
+        end
     end
     if chat then
         chats[p.root] = chat
@@ -42,6 +57,22 @@ end
 function M.open(p)
     local chat = get_chat(p)
     if chat then chat.ui:open() end
+    return chat
+end
+
+function M.new(p, cwd)
+    local chat = get_chat(p, true, cwd)
+    if chat then chat.ui:open() end
+    return chat
+end
+
+function M.activate(chat)
+    if not chat or not vim.api.nvim_buf_is_loaded(chat.bufnr) then return end
+    local root = vim.b[chat.bufnr].game_root
+    if root then chats[root] = chat end
+    vim.cmd.tcd(vim.fn.fnameescape(vim.b[chat.bufnr].codex_cwd or root or vim.fn.getcwd()))
+    require("codecompanion").close_last_chat()
+    chat.ui:open()
 end
 
 function M.add(visual, instruction)
@@ -77,8 +108,16 @@ function M.actions(visual)
             and require("ai.tools").context(visual)
         or nil
     local p = require("game.project").detect()
-    local actions =
-        { "Codex 聊天", "解释代码", "检查游戏性能与内存问题", "Codex 终端" }
+    local actions = {
+        "Codex 聊天",
+        "解释代码",
+        "检查游戏性能与内存问题",
+        "Codex 终端",
+        "选择模型",
+        "当前项目历史对话",
+        "全部本地历史对话",
+        "新建对话",
+    }
     vim.ui.select(actions, { prompt = "Codex" }, function(action)
         if not action then return end
         vim.cmd.tcd(vim.fn.fnameescape(p.root))
@@ -89,6 +128,11 @@ function M.actions(visual)
         if action == actions[1] then
             M.open(p)
             return
+        end
+        if action == actions[8] then return M.new(p) end
+        if action == actions[5] then return require("ai.panel").models(M.open(p)) end
+        if action == actions[6] or action == actions[7] then
+            return require("ai.panel").history(action == actions[7], M.open(p))
         end
         if not context then
             vim.notify("请在代码文件中选择此操作", vim.log.levels.WARN)
