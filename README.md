@@ -53,6 +53,8 @@ Unity 同步插件保留 `:Ustatus`、`:Usync`、`:Uopen`；移除了上游退�
 - `:checkhealth vim.lsp`：检查 LSP；先打开对应语言文件。
 
 `<leader>` 是空格。原有 `s` 保存、`jk` 退出插入模式、`Ctrl+h/j/k/l` 窗口导航继续可用。
+`Ctrl+n` 打开文件树时，会自动展开当前文件所在文件夹并选中该文件；切换文件时同步定位，跨目录时更新文件树根目录。
+文件树关闭 Git 状态查询，避免 Windows 下 Unity 大项目打开时阻塞；Git 状态和差异仍可通过 Neogit、Diffview 查看。
 
 | 快捷键 | 用途 |
 | --- | --- |
@@ -208,6 +210,7 @@ nvim --headless -i NONE -u init.lua -c "lua dofile('tests/codex.lua')"
 nvim --headless -i NONE -u init.lua -c "lua dofile('tests/audit.lua')"
 nvim --headless -i NONE -u init.lua -c "lua dofile('tests/plugins.lua')"
 nvim --headless -i NONE -u init.lua -c "lua dofile('tests/dashboard.lua')"
+nvim --headless -i NONE -u init.lua -c "lua dofile('tests/navigation.lua')"
 ```
 
 第一个检查 Lua 语法、三个引擎的根目录、搜索过滤、AI 上下文、文件类型和缩进；第二个在真实插件环境中检查完整加载。
@@ -215,6 +218,7 @@ nvim --headless -i NONE -u init.lua -c "lua dofile('tests/dashboard.lua')"
 第四个检查 Lazy 的 Git 更新目标、origin 和锁文件；第五个实际验证 Codex ACP、ChatGPT 登录与会话创建，不发送模型推理请求。
 第六个验证未保存内容保护、Unity 对应文件切换、光标保存和特殊 buffer 的项目目录；第七个加载全部插件并检查延迟 UI、通知和命令。
 第八个实际渲染 160×62、140×40、90×42、80×42、80×24 首页，检查透明背景、完整人物、双栏/单栏、快捷键和内容溢出。
+第九个通过真实 Ctrl+n 检查首次定位、跨目录定位、文件跟随，并确保文件树不执行同步 Git 查询。
 真实游戏构建、Editor 附加调试和模型响应仍需在实际项目中验证。
 
 本机已通过 uv 安装 Python 3.12。若 PATH 中没有 Python，配置优先查找 uv 管理的 Python 3.12，再查找其他已有版本；也可设置 `NVIM_PYTHON_BIN`。这只影响 Neovim 进程的 PATH。

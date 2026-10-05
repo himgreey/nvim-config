@@ -43,13 +43,32 @@ return {
     {
         "nvim-tree/nvim-tree.lua",
         version = "*",
-        cmd = { "NvimTreeToggle", "NvimTreeOpen", "NvimTreeFindFile", "NvimTreeFocus" },
+        cmd = {
+            "NvimTreeToggle",
+            "NvimTreeOpen",
+            "NvimTreeFindFile",
+            "NvimTreeFindFileToggle",
+            "NvimTreeFocus",
+        },
         dependencies = { "nvim-tree/nvim-web-devicons" },
         keys = {
-            { "<C-n>", "<cmd>NvimTreeToggle<CR>", mode = "n", desc = "Toggle file tree" },
+            {
+                "<C-n>",
+                "<cmd>NvimTreeFindFileToggle!<CR>",
+                mode = "n",
+                desc = "文件树：定位当前文件",
+            },
         },
         config = function()
-            require("nvim-tree").setup({ hijack_netrw = false }) -- netrw 已在 config.options 中禁用。
+            require("nvim-tree").setup({
+                hijack_netrw = false, -- netrw 已在 config.options 中禁用。
+                -- Windows 上的同步 Git 查询会阻塞 Unity 大项目的打开和定位。
+                git = { enable = false },
+                update_focused_file = {
+                    enable = true,
+                    update_root = { enable = true },
+                },
+            })
         end,
     },
 }
